@@ -45,7 +45,8 @@ do
 	end
 
 	globalEnvironment = getgenv()
-	scriptKey = script_key or globalEnvironment.script_key
+	-- External loader key removed for safety.
+	scriptKey = nil
 	local result4 = globalEnvironment.TokyoX_State
 	local effect = globalEnvironment.TokyoX
 
@@ -14718,35 +14719,21 @@ features.AFK.Toggle = function(line)
 	end
 end
 
+-- Auto-rejoin loader removed: this feature previously downloaded and executed
+-- a remote Luarmor script using an externally supplied script_key.
 features.Script = {}
-
 features.Script.Queue = function()
-	local targetName = tostring(scriptKey or flags.ScriptKey or ""):match("^%s*(.-)%s*$")
-	if targetName == "" then
-		return false
-	end
-	queueonteleport(("script_key=%q;\nloadstring(game:HttpGet(\"https://api.luarmor.net/files/v4/loaders/e30ade937c4c9b8ddbb03e976696e380.lua\"))()"):format(targetName))
-	return true
+	return false
 end
-
-features.Script.Toggle = function(line)
-	coroutineFunction("Auto Rejoin")
-	tokyoXState.ScriptRejoining = nil
-	if not line then
-		return
+features.Script.Toggle = function()
+	if tokyoXState and tokyoXState.Connections then
+		local connection = tokyoXState.Connections["Auto Rejoin"]
+		if connection then
+			connection:Disconnect()
+			tokyoXState.Connections["Auto Rejoin"] = nil
+		end
+		tokyoXState.ScriptRejoining = nil
 	end
-
-	tokyoXState.Connections["Auto Rejoin"] = coreGui:WaitForChild("RobloxPromptGui"):WaitForChild("promptOverlay").ChildAdded:Connect(function(guiObject)
-			if guiObject.Name ~= "ErrorPrompt" or tokyoXState.ScriptRejoining or guiService.MenuIsOpen then
-				return
-			end
-			local LocalPlayer = guiObject:WaitForChild("MessageArea", 1)
-			if not LocalPlayer or not LocalPlayer:WaitForChild("ErrorFrame", 1) or not features.Script.Queue() then
-				return
-			end
-			tokyoXState.ScriptRejoining = true
-			teleportService:Teleport(game.PlaceId, localPlayer)
-		end)
 end
 
 features.AutoPlay = { Direction = 1, Voting = {} }
